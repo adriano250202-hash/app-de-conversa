@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat Pro com Menu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass: rgba(255, 255, 255, 0.95);
+            --sent: #6366f1;
+            --received: #f3f4f6;
+            --sidebar-bg: #111827;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --card-bg: white;
+            --app-bg: #f9fafb;
+        }
+
+        body.dark-theme {
+            --bg-gradient: #0f172a;
+            --glass: #1e293b;
+            --sent: #4f46e5;
+            --received: #334155;
+            --sidebar-bg: #020617;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --card-bg: #1e293b;
+            --app-bg: #0f172a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-gradient); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: background 0.3s; }
+
+        #app {
+            width: 100%; max-width: 450px; height: 90vh; background: var(--glass);
+            border-radius: 28px; display: flex; flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; overflow: hidden;
+            transition: background 0.3s;
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #sidebar {
+            position: absolute; left: -280px; top: 0; width: 280px; height: 100%;
+            background: var(--sidebar-bg); color: white; z-index: 200;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 30px 20px;
+            display: flex; flex-direction: column; gap: 25px;
+        }
+        #sidebar.open { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.3); }
+
+        .sidebar-header { border-bottom: 1px solid #374151; padding-bottom: 20px; }
+        .sidebar-item { 
+            display: flex; align-items: center; gap: 15px; padding: 12px; 
+            border-radius: 12px; cursor: pointer; transition: 0.2s; color: #d1d5db;
+        }
+        .sidebar-item:hover { background: #1f2937; color: white; }
+        .sidebar-item.active { background: var(--primary); color: white; }
+
+        #overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 150; display: none; backdrop-filter: blur(2px);
+        }
+        #overlay.active { display: block; }
+
+        header { padding: 15px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; transition: 0.3s; }
+        .menu-icon { font-size: 24px; cursor: pointer; padding: 5px; color: var(--text-main); }
+        .user-photo { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
+        .header-info { flex: 1; min-width: 0; } /* min-width: 0 previne o texto de empurrar o layout */
+        .header-info strong { font-size: 14px; display: block; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-info span { font-size: 11px; color: #10b981; transition: 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;}
+
+        #login-screen { position: absolute; inset: 0; background: white; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
+        .logo-login { width: 120px; height: 120px; margin-bottom: 20px; border-radius: 20px; object-fit: contain; }
+        .google-btn { background: #1f2937; color: white; border: none; padding: 16px 25px; border-radius: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 250px;}
+
+        .screen-content { display: flex; flex-direction: column; flex: 1; background: var(--app-bg); overflow: hidden; transition: 0.3s; }
+        
+        .messages-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        
+        .msg { 
+            max-width: 80%; padding: 10px 14px; border-radius: 15px; font-size: 14px; line-height: 1.4; color: var(--text-main);
+            animation: slideInUp 0.3s ease-out forwards; opacity: 0; word-wrap: break-word;
+        }
+        
+        .msg.sent { align-self: flex-end; background: var(--sent); color: white; border-bottom-right-radius: 2px; }
+        .msg.received { align-self: flex-start; background: var(--received); border-bottom-left-radius: 2px; }
+        .msg-user { font-size: 9px; font-weight: 700; margin-bottom: 3px; display: block; opacity: 0.7; }
+
+        footer { padding: 15px; background: var(--card-bg); display: flex; gap: 10px; border-top: 1px solid var(--border-color); transition: 0.3s;}
+        input.custom-input { flex: 1; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border-color); outline: none; background: var(--app-bg); color: var(--text-main); font-family: inherit; transition: 0.3s;}
+        button.primary-btn { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.2s; white-space: nowrap;}
+        button.primary-btn:active { transform: scale(0.95); }
+
+        .hidden { display: none !important; }
+
+        .card-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 10px;
+            border: 1px solid var(--border-color); transition: all 0.2s ease;
+        }
+        .friend-item:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .friend-actions { display: none; }
+        .friend-item:hover .friend-actions { display: flex; }
+
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0;}
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        h3.section-title { font-size: 14px; color: var(--text-main); margin-bottom: 10px; margin-top: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+
+        .status-dot {
+            width: 12px; height: 12px; background: #10b981; border-radius: 50%;
+            position: absolute; bottom: 0; right: 0; border: 2px solid var(--card-bg);
+            display: none; transition: 0.3s;
+        }
+        .avatar-container { position: relative; display: inline-block; flex-shrink: 0;}
+
+        /* --- REGRAS ESPECÍFICAS PARA CELULAR (MOBILE RESPONSIVE) --- */
+        @media (max-width: 500px) { 
+            #app { height: 100vh; border-radius: 0; } 
+            
+            /* Sidebar adaptável sem cortar texto */
+            #sidebar { width: 75vw; max-width: 300px; padding: 25px 15px; left: -75vw;}
+            .sidebar-item { font-size: 15px; padding: 14px 10px; }
+            
+            /* Header com elementos menores */
+            header { padding: 12px 15px; }
+            .user-photo { width: 32px; height: 32px; }
+            
+            /* Melhor aproveitamento da tela nas mensagens */
+            .messages-area { padding: 15px; }
+            .msg { max-width: 90%; font-size: 13.5px; }
+            
+            /* Cards responsivos (impede que texto de configs seja esmagado) */
+            .card-item { flex-direction: row; gap: 10px; flex-wrap: wrap; }
+            .card-item > span { flex: 1; min-width: 60%; } /* Garante que o texto ocupe espaço antes de quebrar */
+            
+            /* Ações de amigo sempre visíveis no celular e organizadas */
+            .friend-actions { display: flex; width: 100%; justify-content: flex-end; margin-top: 5px; }
+            
+            /* Inputs e Botões maiores para toque de dedo */
+            input.custom-input, button.primary-btn { min-height: 44px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="overlay"></div>
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu</h3>
+        </div>
+        <div class="sidebar-item active" id="menu-chat">💬 Chat Geral</div>
+        <div class="sidebar-item" id="menu-amizades">👥 Amizades</div>
+        <div class="sidebar-item" id="menu-config">⚙️ Configurações</div>
+        <div class="sidebar-item" id="logout-btn" style="margin-top: auto; color: #ef4444;">🚪 Sair da Conta</div>
+    </div>
+
+    <div id="login-screen">
+        <img id="main-logo" src="LOGO CHAT.jpg" class="logo-login" alt="Logo">
+        <h1>Bem-vindo</h1>
+        <p>Acesse o chat com sua conta Google.</p>
+        <button id="login-btn" class="google-btn">Entrar com Google</button>
+    </div>
+
+    <div id="chat-view" class="screen-content hidden">
+        <header>
+            <div class="menu-icon open-menu">☰</div>
+            <img id="user-photo" src="" class="user-photo">
+            <div class="header-info">
+                <strong id="user-name">Usuário</strong>
+                <span>Online no Geral</span>
+            </div>
+        </header>
+        <div id="messages-container" class="messages-area"></div>
+        <footer>
+            <input type="text" id="message-input" class="custom-input" placeholder="Sua mensagem para todos...">
+            <button id="send-btn" class="primary-btn">Enviar</button>
+        </footer>
+    </div>
+
+    <div id="amizades-view" class="screen-content hidden" style="overflow-y: auto;">
+        <header>
+            <div class="menu-icon open-menu">☰</div>
+            <div class="header-info">
+                <strong>Amizades</strong>
+                <span style="color: var(--text-muted);">Adicione novas conexões</span>
+            </div>
+        </header>
+        <div style="padding: 20px; display: flex; flex-direction: column;">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="search-input" class="custom-input" placeholder="Nome ou email...">
+                <button id="search-user-btn" class="primary-btn">Buscar</button>
+            </div>
+            
+            <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin: 15px 0;">OU</div>
+            
+            <button id="invite-btn" style="background: #10b981; color: white; border: none; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; min-height: 44px;">
+                🔗 Copiar Link de Convite
+            </button>
+
+            <div id="search-results" style="margin-top: 15px;"></div>
+
+            <h3 class="section-title">🔔 Pedidos Pendentes</h3>
+            <div id="pending-requests-list">
+                <p style="font-size: 12px; color: var(--text-muted);">Nenhum pedido no momento.</p>
+            </div>
+
+            <h3 class="section-title">👥 Meus Amigos</h3>
+            <div id="friends-list">
+                <p style="font-size: 12px; color: var(--text-muted);">Você ainda não adicionou ninguém.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="private-chat-view" class="screen-content hidden">
+        <header>
+            <div id="back-to-friends" style="font-size: 24px; cursor: pointer; padding: 5px 10px 5px 0; color: var(--text-main);">⬅️</div>
+            <div class="avatar-container">
+                <img id="private-chat-photo" src="" class="user-photo">
+                <div id="private-status-dot" class="status-dot"></div>
+            </div>
+            <div class="header-info">
+                <strong id="private-chat-name" style="color: var(--text-main);">Amigo</strong>
+                <span id="private-chat-status">Chat Privado</span>
+            </div>
+        </header>
+        <div id="private-messages-container" class="messages-area"></div>
+        <footer>
+            <input type="text" id="private-message-input" class="custom-input" placeholder="Mensagem secreta...">
+            <button id="private-send-btn" class="primary-btn">Enviar</button>
+        </footer>
+    </div>
+
+    <div id="config-view" class="screen-content hidden" style="overflow-y: auto;">
+        <header>
+            <div class="menu-icon open-menu">☰</div>
+            <div class="header-info">
+                <strong>Configurações</strong>
+                <span style="color: var(--text-muted);">Ajuste suas preferências</span>
+            </div>
+        </header>
+        <div style="padding: 20px;">
+            <h3 class="section-title" style="margin-top: 0;">Meu Perfil</h3>
+            <div class="card-item" style="flex-direction: column; align-items: flex-start; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+                    <img id="config-photo" src="" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--border-color); flex-shrink: 0;">
+                    <div style="flex: 1; min-width: 0;">
+                        <strong id="config-name" style="font-size: 16px; color: var(--text-main); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Nome</strong>
+                        <div id="config-email" style="font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">email</div>
+                    </div>
+                </div>
+                <div style="width: 100%;">
+                    <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Seu Status / Recado</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <input type="text" id="status-input" class="custom-input" placeholder="Ex: Trabalhando...">
+                        <button id="save-status-btn" class="primary-btn" style="padding: 0 20px;">Salvar</button>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="section-title">Aparência e Notificações</h3>
+            <div class="card-item" style="flex-wrap: nowrap;">
+                <span style="color: var(--text-main); font-weight: 600; font-size: 14px;">🌙 Modo Escuro</span>
+                <label class="switch">
+                    <input type="checkbox" id="dark-mode-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="card-item" style="flex-wrap: nowrap;">
+                <span style="color: var(--text-main); font-weight: 600; font-size: 14px;">🔔 Sons do Chat</span>
+                <label class="switch">
+                    <input type="checkbox" id="sound-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded, serverTimestamp, set, get, child, onValue, remove, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAMMpNbBKgiIrak4Bu9wK81emNHJhUrKsQ",
+        authDomain: "adriano2emba.firebaseapp.com",
+        databaseURL: "https://adriano2emba-default-rtdb.firebaseio.com",
+        projectId: "adriano2emba",
+        storageBucket: "adriano2emba.firebasestorage.app",
+        messagingSenderId: "174175436846",
+        appId: "1:174175436846:web:fa90fed1551a3fff7e1fbf"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const chatView = document.getElementById('chat-view');
+    const amizadesView = document.getElementById('amizades-view');
+    const privateChatView = document.getElementById('private-chat-view');
+    const configView = document.getElementById('config-view');
+    
+    let currentPrivateRoomId = null;
+    let unsubPrivateChat = null;
+    let soundEnabled = true;
+    let privateStatusUnsub = null; 
+
+    const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+    function switchView(viewToShow, activeMenuId) {
+        [chatView, amizadesView, privateChatView, configView].forEach(v => v.classList.add('hidden'));
+        viewToShow.classList.remove('hidden');
+        document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+        if(activeMenuId) document.getElementById(activeMenuId).classList.add('active');
+        if (unsubPrivateChat) { unsubPrivateChat(); unsubPrivateChat = null; }
+        if (privateStatusUnsub) { privateStatusUnsub(); privateStatusUnsub = null; }
+        sidebar.classList.remove('open'); overlay.classList.remove('active');
+    }
+
+    document.querySelectorAll('.open-menu').forEach(btn => {
+        btn.onclick = () => { sidebar.classList.add('open'); overlay.classList.add('active'); };
+    });
+    overlay.onclick = () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); };
+
+    document.getElementById('menu-chat').onclick = () => switchView(chatView, 'menu-chat');
+    document.getElementById('menu-amizades').onclick = () => switchView(amizadesView, 'menu-amizades');
+    document.getElementById('menu-config').onclick = () => switchView(configView, 'menu-config');
+
+    document.getElementById('invite-btn').onclick = () => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            const btn = document.getElementById('invite-btn');
+            btn.innerText = "✅ Copiado!"; btn.style.background = "#059669";
+            setTimeout(() => { btn.innerText = "🔗 Copiar Link de Convite"; btn.style.background = "#10b981"; }, 3000);
+        });
+    };
+
+    document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+    document.getElementById('logout-btn').onclick = () => { signOut(auth); overlay.click(); };
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
+            document.getElementById('user-photo').src = user.photoURL;
+            document.getElementById('config-name').innerText = user.displayName;
+            document.getElementById('config-email').innerText = user.email;
+            document.getElementById('config-photo').src = user.photoURL;
+
+            document.getElementById('login-screen').classList.add('hidden');
+            switchView(chatView, 'menu-chat');
+            
+            const userStatusRef = ref(db, `usuarios/${user.uid}/online`);
+            onDisconnect(userStatusRef).set(false).then(() => { set(userStatusRef, true); });
+
+            update(ref(db, 'usuarios/' + user.uid), {
+                nome: user.displayName, email: user.email, foto: user.photoURL, ultimoLogin: serverTimestamp()
+            });
+
+            get(child(ref(db), `usuarios/${user.uid}/config`)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const cfg = snapshot.val();
+                    if(cfg.status) document.getElementById('status-input').value = cfg.status;
+                    if(cfg.som !== undefined) { soundEnabled = cfg.som; document.getElementById('sound-toggle').checked = soundEnabled; }
+                    if(cfg.darkTheme) { document.getElementById('dark-mode-toggle').checked = true; document.body.classList.add('dark-theme'); }
+                }
+            });
+
+            onValue(ref(db, `pedidos_amizade/${user.uid}`), (snapshot) => {
+                const pendingList = document.getElementById('pending-requests-list');
+                pendingList.innerHTML = ''; 
+                if (snapshot.exists()) {
+                    let temPedidoPendente = false;
+                    for (const remetenteId in snapshot.val()) {
+                        const p = snapshot.val()[remetenteId];
+                        temPedidoPendente = true;
+                        pendingList.innerHTML += `
+                            <div class="card-item" style="background: var(--app-bg); border: 1px solid #fcd34d;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <img src="${p.foto}" style="width: 35px; height: 35px; border-radius: 50%;">
+                                    <span style="font-size: 13px; font-weight: bold; color: var(--text-main);">${p.nome}</span>
+                                </div>
+                                <div style="display: flex; gap: 6px;">
+                                    <button class="btn-aceitar" data-uid="${remetenteId}" data-nome="${p.nome}" data-foto="${p.foto}" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Aceitar</button>
+                                    <button class="btn-recusar" data-uid="${remetenteId}" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer;">X</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    if(!temPedidoPendente) pendingList.innerHTML = '<p style="font-size: 12px; color: var(--text-muted);">Nenhum pedido no momento.</p>';
+                    else ativarBotoesDeResposta();
+                } else { pendingList.innerHTML = '<p style="font-size: 12px; color: var(--text-muted);">Nenhum pedido no momento.</p>'; }
+            });
+
+            onValue(ref(db, `amigos/${user.uid}`), (snapshot) => {
+                const friendsList = document.getElementById('friends-list');
+                friendsList.innerHTML = '';
+                if (snapshot.exists()) {
+                    const amigos = snapshot.val();
+                    let listHTML = '';
+
+                    for (const fUid in amigos) {
+                        const amg = amigos[fUid];
+                        listHTML += `
+                            <div class="card-item friend-item">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="avatar-container">
+                                        <img src="${amg.foto}" style="width: 35px; height: 35px; border-radius: 50%;">
+                                        <div class="status-dot" id="status-${amg.uid}"></div>
+                                    </div>
+                                    <span style="font-size: 13px; font-weight: bold; color: var(--text-main);">${amg.nome}</span>
+                                </div>
+                                <div class="friend-actions">
+                                    <button class="btn-chat-privado" data-uid="${amg.uid}" data-nome="${amg.nome}" data-foto="${amg.foto}" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">💬 Chat</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    friendsList.innerHTML = listHTML;
+
+                    for (const fUid in amigos) {
+                        onValue(ref(db, `usuarios/${fUid}/online`), (snap) => {
+                            const isOnline = snap.val();
+                            const dot = document.getElementById(`status-${fUid}`);
+                            if (dot) dot.style.display = isOnline ? 'block' : 'none';
+                        });
+                    }
+
+                    document.querySelectorAll('.btn-chat-privado').forEach(btn => {
+                        btn.onclick = (e) => {
+                            const amigoUid = e.target.getAttribute('data-uid');
+                            currentPrivateRoomId = auth.currentUser.uid < amigoUid ? `${auth.currentUser.uid}_${amigoUid}` : `${amigoUid}_${auth.currentUser.uid}`;
+                            document.getElementById('private-chat-name').innerText = e.target.getAttribute('data-nome');
+                            document.getElementById('private-chat-photo').src = e.target.getAttribute('data-foto');
+                            document.getElementById('private-messages-container').innerHTML = ''; 
+                            
+                            switchView(privateChatView, null);
+
+                            unsubPrivateChat = onChildAdded(ref(db, `mensagens_privadas/${currentPrivateRoomId}`), (snap) => {
+                                renderMessage(snap.val(), 'private-messages-container');
+                            });
+
+                            privateStatusUnsub = onValue(ref(db, `usuarios/${amigoUid}/online`), (snap) => {
+                                const isOnline = snap.val();
+                                document.getElementById('private-status-dot').style.display = isOnline ? 'block' : 'none';
+                                document.getElementById('private-chat-status').innerText = isOnline ? 'Online agora' : 'Offline';
+                                document.getElementById('private-chat-status').style.color = isOnline ? '#10b981' : 'var(--text-muted)';
+                            });
+                        };
+                    });
+                } else { friendsList.innerHTML = '<p style="font-size: 12px; color: var(--text-muted);">Você ainda não adicionou ninguém.</p>'; }
+            });
+
+        } else {
+            document.getElementById('login-screen').classList.remove('hidden');
+            [chatView, amizadesView, privateChatView, configView].forEach(v => v.classList.add('hidden'));
+        }
+    });
+
+    document.getElementById('save-status-btn').onclick = async () => {
+        const btn = document.getElementById('save-status-btn');
+        await update(ref(db, `usuarios/${auth.currentUser.uid}/config`), { status: document.getElementById('status-input').value.trim() });
+        btn.innerText = "Salvo!"; btn.style.background = "#10b981";
+        setTimeout(() => { btn.innerText = "Salvar"; btn.style.background = "var(--primary)"; }, 2000);
+    };
+
+    document.getElementById('dark-mode-toggle').onchange = (e) => {
+        const isDark = e.target.checked;
+        if(isDark) document.body.classList.add('dark-theme'); else document.body.classList.remove('dark-theme');
+        if(auth.currentUser) update(ref(db, `usuarios/${auth.currentUser.uid}/config`), { darkTheme: isDark });
+    };
+
+    document.getElementById('sound-toggle').onchange = (e) => {
+        soundEnabled = e.target.checked;
+        if(auth.currentUser) update(ref(db, `usuarios/${auth.currentUser.uid}/config`), { som: soundEnabled });
+    };
+
+    function playNotification(isMe) {
+        if(!isMe && soundEnabled) {
+            notificationSound.currentTime = 0;
+            notificationSound.play().catch(e => console.log("O som precisa de interação."));
+        }
+    }
+
+    function renderMessage(d, containerId) {
+        const isMe = d.uid === auth.currentUser?.uid;
+        const div = document.createElement('div'); 
+        div.className = `msg ${isMe ? 'sent' : 'received'}`;
+        div.innerHTML = `<span class="msg-user">${isMe ? 'Você' : d.user}</span>${d.text}`;
+        const container = document.getElementById(containerId);
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        playNotification(isMe);
+    }
+
+    document.getElementById('back-to-friends').onclick = () => switchView(amizadesView, 'menu-amizades');
+
+    function ativarBotoesDeResposta() {
+        document.querySelectorAll('.btn-recusar').forEach(btn => {
+            btn.onclick = async (e) => remove(ref(db, `pedidos_amizade/${auth.currentUser.uid}/${e.target.getAttribute('data-uid')}`));
+        });
+        document.querySelectorAll('.btn-aceitar').forEach(btn => {
+            btn.onclick = async (e) => {
+                const remetenteId = e.target.getAttribute('data-uid');
+                await set(ref(db, `amigos/${auth.currentUser.uid}/${remetenteId}`), { uid: remetenteId, nome: e.target.getAttribute('data-nome'), foto: e.target.getAttribute('data-foto') });
+                await set(ref(db, `amigos/${remetenteId}/${auth.currentUser.uid}`), { uid: auth.currentUser.uid, nome: auth.currentUser.displayName, foto: auth.currentUser.photoURL });
+                await remove(ref(db, `pedidos_amizade/${auth.currentUser.uid}/${remetenteId}`));
+            };
+        });
+    }
+
+    document.getElementById('search-user-btn').onclick = async () => {
+        const searchTerm = document.getElementById('search-input').value.trim().toLowerCase();
+        const resultsContainer = document.getElementById('search-results');
+        if (!searchTerm) { resultsContainer.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Digite algo.</p>'; return; }
+        resultsContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:14px;">Buscando...</p>';
+
+        try {
+            const snapshot = await get(child(ref(db), 'usuarios'));
+            if (snapshot.exists()) {
+                let foundHTML = '';
+                for (const uid in snapshot.val()) {
+                    const u = snapshot.val()[uid];
+                    if (auth.currentUser && uid === auth.currentUser.uid) continue;
+                    if ((u.nome && u.nome.toLowerCase().includes(searchTerm)) || (u.email && u.email.toLowerCase().includes(searchTerm))) {
+                        foundHTML += `
+                            <div class="card-item">
+                                <div style="display: flex; align-items: center; gap: 12px; min-width:0; flex:1;">
+                                    <img src="${u.foto}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); flex-shrink:0;">
+                                    <div style="text-align: left; min-width:0;">
+                                        <strong style="display: block; font-size: 14px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.nome}</strong>
+                                        <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">${u.email}</span>
+                                    </div>
+                                </div>
+                                <button class="btn-enviar-pedido" data-uid="${uid}" style="background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; white-space: nowrap;">Adicionar</button>
+                            </div>
+                        `;
+                    }
+                }
+                if (foundHTML === '') resultsContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:14px;">Não encontrado.</p>';
+                else {
+                    resultsContainer.innerHTML = foundHTML;
+                    document.querySelectorAll('.btn-enviar-pedido').forEach(btn => {
+                        btn.onclick = async (e) => {
+                            await set(ref(db, `pedidos_amizade/${e.target.getAttribute('data-uid')}/${auth.currentUser.uid}`), { nome: auth.currentUser.displayName, foto: auth.currentUser.photoURL });
+                            e.target.innerText = "Enviado!"; e.target.style.background = "#10b981"; e.target.disabled = true;
+                        };
+                    });
+                }
+            }
+        } catch (error) { resultsContainer.innerHTML = '<p style="text-align:center; color:#ef4444;">Erro ao buscar.</p>'; }
+    };
+    document.getElementById('search-input').onkeypress = (e) => { if(e.key === 'Enter') document.getElementById('search-user-btn').click(); };
+
+    function enviarPrivado() {
+        const text = document.getElementById('private-message-input').value.trim();
+        if (text && auth.currentUser && currentPrivateRoomId) {
+            push(ref(db, `mensagens_privadas/${currentPrivateRoomId}`), { text: text, user: auth.currentUser.displayName, uid: auth.currentUser.uid, time: serverTimestamp() });
+            document.getElementById('private-message-input').value = '';
+        }
+    }
+    document.getElementById('private-send-btn').onclick = enviarPrivado;
+    document.getElementById('private-message-input').onkeypress = (e) => { if(e.key === 'Enter') enviarPrivado(); };
+
+    function enviarGeral() {
+        const text = document.getElementById('message-input').value.trim();
+        if (text && auth.currentUser) {
+            push(ref(db, 'mensagens'), { text: text, user: auth.currentUser.displayName, uid: auth.currentUser.uid, time: serverTimestamp() });
+            document.getElementById('message-input').value = '';
+        }
+    }
+    document.getElementById('send-btn').onclick = enviarGeral;
+    document.getElementById('message-input').onkeypress = (e) => { if(e.key === 'Enter') enviarGeral(); };
+
+    onChildAdded(ref(db, 'mensagens'), (snap) => renderMessage(snap.val(), 'messages-container'));
+</script>
+</body>
+</html>
