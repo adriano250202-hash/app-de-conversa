@@ -73,7 +73,7 @@
         header { padding: 15px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; transition: 0.3s; }
         .menu-icon { font-size: 24px; cursor: pointer; padding: 5px; color: var(--text-main); }
         .user-photo { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
-        .header-info { flex: 1; min-width: 0; } /* min-width: 0 previne o texto de empurrar o layout */
+        .header-info { flex: 1; min-width: 0; }
         .header-info strong { font-size: 14px; display: block; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .header-info span { font-size: 11px; color: #10b981; transition: 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;}
 
@@ -130,8 +130,8 @@
         @media (max-width: 500px) { 
             #app { height: 100vh; border-radius: 0; } 
             
-            /* Sidebar adaptável sem cortar texto */
-            #sidebar { width: 75vw; max-width: 300px; padding: 25px 15px; left: -75vw;}
+            /* Sidebar adaptável sem cortar texto e com margem embaixo */
+            #sidebar { width: 75vw; max-width: 300px; padding: 25px 15px 50px 15px; left: -75vw; }
             .sidebar-item { font-size: 15px; padding: 14px 10px; }
             
             /* Header com elementos menores */
@@ -142,9 +142,9 @@
             .messages-area { padding: 15px; }
             .msg { max-width: 90%; font-size: 13.5px; }
             
-            /* Cards responsivos (impede que texto de configs seja esmagado) */
+            /* Cards responsivos */
             .card-item { flex-direction: row; gap: 10px; flex-wrap: wrap; }
-            .card-item > span { flex: 1; min-width: 60%; } /* Garante que o texto ocupe espaço antes de quebrar */
+            .card-item > span { flex: 1; min-width: 60%; } 
             
             /* Ações de amigo sempre visíveis no celular e organizadas */
             .friend-actions { display: flex; width: 100%; justify-content: flex-end; margin-top: 5px; }
@@ -165,7 +165,7 @@
         <div class="sidebar-item active" id="menu-chat">💬 Chat Geral</div>
         <div class="sidebar-item" id="menu-amizades">👥 Amizades</div>
         <div class="sidebar-item" id="menu-config">⚙️ Configurações</div>
-        <div class="sidebar-item" id="logout-btn" style="margin-top: auto; color: #ef4444;">🚪 Sair da Conta</div>
+        <div class="sidebar-item" id="logout-btn" style="margin-top: auto; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); justify-content: center; font-weight: bold;">🚪 Sair da Conta</div>
     </div>
 
     <div id="login-screen">
