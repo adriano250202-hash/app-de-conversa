@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Chat Pro com Menu</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -34,7 +34,9 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-gradient); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: background 0.3s; }
+        
+        /* Uso de 100dvh para respeitar a altura real do navegador no celular */
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-gradient); height: 100vh; height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: background 0.3s; }
 
         #app {
             width: 100%; max-width: 450px; height: 90vh; background: var(--glass);
@@ -128,7 +130,7 @@
 
         /* --- REGRAS ESPECÍFICAS PARA CELULAR (MOBILE RESPONSIVE) --- */
         @media (max-width: 500px) { 
-            #app { height: 100vh; border-radius: 0; } 
+            #app { height: 100vh; height: 100dvh; border-radius: 0; } 
             
             /* Sidebar adaptável sem cortar texto e com margem embaixo */
             #sidebar { width: 75vw; max-width: 300px; padding: 25px 15px 50px 15px; left: -75vw; }
@@ -142,6 +144,9 @@
             .messages-area { padding: 15px; }
             .msg { max-width: 90%; font-size: 13.5px; }
             
+            /* Ajuste crucial no footer: afasta do fundo da tela para não brigar com os botões do sistema */
+            footer { padding-bottom: max(25px, env(safe-area-inset-bottom)); }
+
             /* Cards responsivos */
             .card-item { flex-direction: row; gap: 10px; flex-wrap: wrap; }
             .card-item > span { flex: 1; min-width: 60%; } 
